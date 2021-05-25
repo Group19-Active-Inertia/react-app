@@ -154,3 +154,7 @@ button {
   border-radius: 50%;
   max-width: 100%;
 }
+
+.map-container {
+  height: 400px;
+}

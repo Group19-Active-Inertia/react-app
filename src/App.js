@@ -1,22 +1,30 @@
-import React, { Component } from 'react';
+import React, { Component, useRef, useEffect, useState } from 'react';
 import './App.css';
 import firebase, { auth, provider } from './firebase.js';
+import mapboxgl from '!mapbox-gl'; // eslint-disable-line import/no-webpack-loader-syntax
+
+mapboxgl.accessToken = 'pk.eyJ1IjoicGczNzE4IiwiYSI6ImNrcDRkOTlweTAwMTYyb2xmOWdtYWQ5MHMifQ.qqgml2fS9n6aeHF3AOV64Q';
+
 
 
 class App extends Component {
-  constructor() {
-    super();
+  constructor(props) {
+    super(props);
     this.state = {
       currentItem: '',
       username: '',
       items: [],
       events: [],
-      user: null
+      user: '',
+      lng: 3.4360,
+      lat: 55.3781,
+      zoom: 4
     }
     this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this); // <-- add this line
     this.login = this.login.bind(this); // <-- add this line
     this.logout = this.logout.bind(this); // <-- add this line
+    this.mapContainer = React.createRef();
   }
   render() {
     return (
@@ -63,6 +71,7 @@ class App extends Component {
         </section>
         <section className='display-item'>
           <div className="wrapper">
+          <p>NERUs</p>
           <ul>
             {this.state.items.map((item) => {
               return (
@@ -79,6 +88,7 @@ class App extends Component {
           </ul>
         </div>
         <div className="wrapper">
+        <p>Inertia Events</p>
           <ul>
             {this.state.events.map((event) => {
               return (
@@ -96,8 +106,9 @@ class App extends Component {
           </ul>
         </div>
         </section>
-        </div>
       </div>
+        <div ref={this.mapContainer} className="map-container" />
+         </div>
     );
   }
   handleChange(e) {
@@ -181,9 +192,16 @@ class App extends Component {
     });
   });
 
-
-
+  const { lng, lat, zoom } = this.state;
+  const map = new mapboxgl.Map({
+    container: this.mapContainer.current,
+    style: 'mapbox://styles/mapbox/streets-v11',
+    center: [lng, lat],
+    zoom: zoom
+  });
 }
+
+
 removeItem(itemId) {
   const itemRef = firebase.database().ref(`/items/${itemId}`);
   itemRef.remove();
