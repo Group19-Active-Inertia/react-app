@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import './App.css';
-import firebase from './firebase.js'; // <--- add this line
+import firebase, { auth, provider } from './firebase.js';
 
 
 class App extends Component {
@@ -9,10 +9,13 @@ class App extends Component {
     this.state = {
       currentItem: '',
       username: '',
-      items: []
+      items: [],
+      user: null
     }
     this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this); // <-- add this line
+    this.login = this.login.bind(this); // <-- add this line
+    this.logout = this.logout.bind(this); // <-- add this line
   }
   render() {
     return (
@@ -20,8 +23,24 @@ class App extends Component {
         <header>
             <div className='wrapper'>
               <h1>Create Active Inertia</h1>
+                {this.state.user ?
+                <button onClick={this.logout}>Log Out</button>                
+                :
+                 <button onClick={this.login}>Log In</button>              
+                 }
             </div>
         </header>
+        {this.state.user ?
+    <div>
+      <div className='user-profile'>
+        <img src={this.state.user.photoURL} />
+      </div>
+    </div>
+    :
+    <div className='wrapper'>
+      <p>You must be logged in to see the potluck list and submit to it.</p>
+    </div>
+  }
         <div className='container'>
           <section className="add-item">
             <form onSubmit={this.handleSubmit}>
@@ -77,6 +96,11 @@ class App extends Component {
   });
   }
   componentDidMount() {
+   auth.onAuthStateChanged((user) => {
+    if (user) {
+      this.setState({ user });
+    } 
+    }); 
   const itemsRef = firebase.database().ref('items');
   itemsRef.on('value', (snapshot) => {
     let items = snapshot.val();
@@ -99,5 +123,25 @@ removeItem(itemId) {
   const itemRef = firebase.database().ref(`/items/${itemId}`);
   itemRef.remove();
 } 
+
+logout() {
+  auth.signOut()
+    .then(() => {
+      this.setState({
+        user: null
+      });
+    });
+}
+login() {
+  auth.signInWithPopup(provider) 
+    .then((result) => {
+      const user = result.user;
+      this.setState({
+        user
+      });
+    });
+}
+
+
 }
 export default App;
