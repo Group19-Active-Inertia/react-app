@@ -10,6 +10,7 @@ class App extends Component {
       currentItem: '',
       username: '',
       items: [],
+      events: [],
       user: null
     }
     this.handleChange = this.handleChange.bind(this);
@@ -38,17 +39,26 @@ class App extends Component {
     </div>
     :
     <div className='wrapper'>
-      <p>You must be logged in to see the potluck list and submit to it.</p>
+      <p>You must be logged in to see the NERU list</p>
     </div>
   }
         <div className='container'>
           <section className="add-item">
+          <p>Add a NERU</p>
             <form onSubmit={this.handleSubmit}>
               <input type="text" name="device_id" placeholder="Enter Device ID" onChange={this.handleChange} value={this.state.device_id} />
               <input type="text" name="location" placeholder="Location" onChange={this.handleChange} value={this.state.location} />
               <input type="text" name="name" placeholder="Name" onChange={this.handleChange} value={this.state.name} />
               <input type="text" name="port" placeholder="Port" onChange={this.handleChange} value={this.state.port} />
               <button>Add Neru</button>
+            </form>
+            <p>Simulate Inertia Event</p>
+            <form onSubmit={this.handleSubmitEvent}>
+              <input type="text" name="device_id_1" placeholder="Enter Device ID" onChange={this.handleChange} value={this.state.device_id_1} />
+              <input type="text" name="location_1" placeholder="Location" onChange={this.handleChange} value={this.state.location_1} />
+              <input type="text" name="time" placeholder="Time" onChange={this.handleChange} value={this.state.time} />
+              <input type="text" name="type" placeholder="Event Type" onChange={this.handleChange} value={this.state.type} />
+              <button>Generate Event</button>
             </form>
         </section>
         <section className='display-item'>
@@ -62,6 +72,23 @@ class App extends Component {
                   <p>Location: {item.location}</p>
                   <p>Port: {item.port}
                   <button onClick={() => this.removeItem(item.id)}>Remove Item</button>
+                  </p>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+        <div className="wrapper">
+          <ul>
+            {this.state.events.map((event) => {
+              return (
+                <li key={event.id}>
+                  <h3>Inertia Event: {event.location_1}</h3>
+                  <p>Device ID: {event.device_id_1}</p>
+                  <p>Location: {event.location_1}</p>
+                  <p>Time: {event.time}</p>
+                   <p>Type: {event.type}
+                   <button onClick={() => this.removeEvent(event.id)}>Archive</button>
                   </p>
                 </li>
               )
@@ -95,6 +122,23 @@ class App extends Component {
     port: ''
   });
   }
+  handleSubmitEvent(e) {
+  e.preventDefault();
+  const eventsRef = firebase.database().ref('events');
+  const event = {
+    device_id_1: this.state.device_id_1,
+    location_1: this.state.location_1,
+    time: this.state.time,
+    type: this.state.type
+  }
+  eventsRef.push(event);
+  this.setState({
+    device_id_1: '',
+    location_1: '',
+    time: '',
+    type: ''
+  });
+  }
   componentDidMount() {
    auth.onAuthStateChanged((user) => {
     if (user) {
@@ -118,10 +162,36 @@ class App extends Component {
       items: newState
     });
   });
+
+    const eventsRef = firebase.database().ref('events');
+  eventsRef.on('value', (snapshot) => {
+    let events = snapshot.val();
+    let newState = [];
+    for (let event in events) {
+      newState.push({
+        id: event,
+        device_id_1: events[event].device_id_1,
+        location_1: events[event].location_1,
+        time: events[event].time,
+        type: events[event].type
+      });
+    }
+    this.setState({
+      events: newState
+    });
+  });
+
+
+
 }
 removeItem(itemId) {
   const itemRef = firebase.database().ref(`/items/${itemId}`);
   itemRef.remove();
+} 
+
+removeEvent(eventId) {
+  const eventsRef = firebase.database().ref(`/events/${eventId}`);
+  eventsRef.remove();
 } 
 
 logout() {
