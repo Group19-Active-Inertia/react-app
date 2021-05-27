@@ -9,10 +9,12 @@ const Map = ReactMapboxGl({
 accessToken:'pk.eyJ1IjoicGczNzE4IiwiYSI6ImNrcDRkOTlweTAwMTYyb2xmOWdtYWQ5MHMifQ.qqgml2fS9n6aeHF3AOV64Q'
       });
 
-    var ref =  firebase.database().ref('items'); 
+var ref =  firebase.database().ref('items'); 
+var coord = [];
 
-  ref.on('child_added', function(snap){
+ref.on('child_added', function(snap){
     console.log(snap.val().Coordinate);
+    coord = snap.val().Coordinate;
   });
 
 class App extends Component {
@@ -38,8 +40,6 @@ class App extends Component {
   }
   render(){
     return (
-
-
       <div className='app'>
         <header>
             <div className='wrapper'>
@@ -61,7 +61,6 @@ class App extends Component {
     <div className='wrapper'>
       <p>You must be logged in to see the NERU list</p>
     </div>
-    
   }
         <div className='container'>
           <section className="add-item">
@@ -130,7 +129,7 @@ class App extends Component {
   type="symbol"
    id="marker" 
    layout={{'icon-image': 'marker-15' }}>
-  <Feature coordinates={[-0.481747846041145, 51.3233379650232]} />
+  <Feature coordinates={[-0.481747846041145, 51.3233379650232], coord} />
   </Layer>
 </Map>
          </div>
