@@ -2,8 +2,8 @@ import React, { Component, useRef, useEffect, useState } from 'react';
 import './App.css';
 import firebase, { auth, provider } from './firebase.js';
 import mapboxgl from '!mapbox-gl'; // eslint-disable-line import/no-webpack-loader-syntax
-
-mapboxgl.accessToken = 'pk.eyJ1IjoicGczNzE4IiwiYSI6ImNrcDRkOTlweTAwMTYyb2xmOWdtYWQ5MHMifQ.qqgml2fS9n6aeHF3AOV64Q';
+import ReactMapboxGl, { Layer, Feature } from 'react-mapbox-gl';
+import 'mapbox-gl/dist/mapbox-gl.css';
 
 
 
@@ -21,12 +21,33 @@ class App extends Component {
       zoom: 4
     }
     this.handleChange = this.handleChange.bind(this);
-    this.handleSubmit = this.handleSubmit.bind(this); // <-- add this line
+    this.handleSubmit = this.handleSubmit.bind(this);
+    this.handleSubmitEvent = this.handleSubmitEvent.bind(this); // <-- add this line
     this.login = this.login.bind(this); // <-- add this line
     this.logout = this.logout.bind(this); // <-- add this line
-    this.mapContainer = React.createRef();
+    //this.mapContainer = React.createRef();
+
+      const Map = ReactMapboxGl({
+      accessToken:
+      'pk.eyJ1IjoicGczNzE4IiwiYSI6ImNrcDRkOTlweTAwMTYyb2xmOWdtYWQ5MHMifQ.qqgml2fS9n6aeHF3AOV64Q'
+      });
+
   }
   render() {
+
+    <Map
+      style="mapbox://styles/mapbox/streets-v9"
+       containerStyle={{
+        height: '100vh',
+      width: '100vw'
+    }}
+    >
+  <Layer type="symbol" id="marker" layout={{ 'icon-image': 'marker-15' }}>
+    <Feature coordinates={[-0.481747846041145, 51.3233379650232]} />
+  </Layer>
+</Map>;
+
+
     return (
       <div className='app'>
         <header>
@@ -49,6 +70,7 @@ class App extends Component {
     <div className='wrapper'>
       <p>You must be logged in to see the NERU list</p>
     </div>
+    
   }
         <div className='container'>
           <section className="add-item">
@@ -107,7 +129,7 @@ class App extends Component {
         </div>
         </section>
       </div>
-        <div ref={this.mapContainer} className="map-container" />
+        
          </div>
     );
   }
@@ -192,13 +214,13 @@ class App extends Component {
     });
   });
 
-  const { lng, lat, zoom } = this.state;
-  const map = new mapboxgl.Map({
-    container: this.mapContainer.current,
-    style: 'mapbox://styles/mapbox/streets-v11',
-    center: [lng, lat],
-    zoom: zoom
-  });
+//   const { lng, lat, zoom } = this.state;
+//   const map = new mapboxgl.Map({
+//     container: this.mapContainer.current,
+//     style: 'mapbox://styles/mapbox/streets-v11',
+//     center: [lng, lat],
+//     zoom: zoom
+//   });
 }
 
 
