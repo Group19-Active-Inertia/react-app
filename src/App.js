@@ -2,10 +2,18 @@ import React, { Component, useRef, useEffect, useState } from 'react';
 import './App.css';
 import firebase, { auth, provider } from './firebase.js';
 import mapboxgl from '!mapbox-gl'; // eslint-disable-line import/no-webpack-loader-syntax
-import ReactMapboxGl, { Layer, Feature } from 'react-mapbox-gl';
+import ReactMapboxGl, { Layer, Feature, Marker } from 'react-mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
+const Map = ReactMapboxGl({
+accessToken:'pk.eyJ1IjoicGczNzE4IiwiYSI6ImNrcDRkOTlweTAwMTYyb2xmOWdtYWQ5MHMifQ.qqgml2fS9n6aeHF3AOV64Q'
+      });
 
+    var ref =  firebase.database().ref('items'); 
+
+  ref.on('child_added', function(snap){
+    console.log(snap.val().Coordinate);
+  });
 
 class App extends Component {
   constructor(props) {
@@ -18,7 +26,8 @@ class App extends Component {
       user: '',
       lng: 3.4360,
       lat: 55.3781,
-      zoom: 4
+      zoom: 4,
+      coord: ''
     }
     this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
@@ -26,29 +35,11 @@ class App extends Component {
     this.login = this.login.bind(this); // <-- add this line
     this.logout = this.logout.bind(this); // <-- add this line
     //this.mapContainer = React.createRef();
-
-      const Map = ReactMapboxGl({
-      accessToken:
-      'pk.eyJ1IjoicGczNzE4IiwiYSI6ImNrcDRkOTlweTAwMTYyb2xmOWdtYWQ5MHMifQ.qqgml2fS9n6aeHF3AOV64Q'
-      });
-
   }
-  render() {
-
-    <Map
-      style="mapbox://styles/mapbox/streets-v9"
-       containerStyle={{
-        height: '100vh',
-      width: '100vw'
-    }}
-    >
-  <Layer type="symbol" id="marker" layout={{ 'icon-image': 'marker-15' }}>
-    <Feature coordinates={[-0.481747846041145, 51.3233379650232]} />
-  </Layer>
-</Map>;
-
-
+  render(){
     return (
+
+
       <div className='app'>
         <header>
             <div className='wrapper'>
@@ -129,7 +120,19 @@ class App extends Component {
         </div>
         </section>
       </div>
-        
+            <Map
+      style="mapbox://styles/mapbox/streets-v8"
+      containerStyle={{
+        height: '70vh',
+      width: '100vw'
+    }}>
+  <Layer 
+  type="symbol"
+   id="marker" 
+   layout={{'icon-image': 'marker-15' }}>
+  <Feature coordinates={[-0.481747846041145, 51.3233379650232]} />
+  </Layer>
+</Map>
          </div>
     );
   }
