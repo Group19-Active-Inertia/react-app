@@ -251,14 +251,6 @@ removeEvent(eventId) {
   eventsRef.remove();
 } 
 
-logout() {
-  auth.signOut()
-    .then(() => {
-      this.setState({
-        user: null
-      });
-    });
-}
 login() {
   auth.signInWithPopup(provider) 
     .then((result) => {
@@ -266,6 +258,17 @@ login() {
       this.setState({
         user
       });
+      window.location.reload(false);
+    });
+}
+
+logout() {
+  auth.signOut()
+    .then(() => {
+      this.setState({
+        user: null
+      });
+      window.location.reload(false);
     });
 }
 
