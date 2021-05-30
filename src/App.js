@@ -4,41 +4,49 @@ import firebase, { auth, provider } from './firebase.js';
 import mapboxgl from '!mapbox-gl'; // eslint-disable-line import/no-webpack-loader-syntax
 import ReactMapboxGl, { Layer, Feature, Marker } from 'react-mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
+import ReachDOM from 'react-dom';
 
-const Map = ReactMapboxGl({
-accessToken:'pk.eyJ1IjoicGczNzE4IiwiYSI6ImNrcDRkOTlweTAwMTYyb2xmOWdtYWQ5MHMifQ.qqgml2fS9n6aeHF3AOV64Q'
-      });
+mapboxgl.accessToken='pk.eyJ1IjoicGczNzE4IiwiYSI6ImNrcDRkOTlweTAwMTYyb2xmOWdtYWQ5MHMifQ.qqgml2fS9n6aeHF3AOV64Q';
 
-var ref =  firebase.database().ref('items'); 
-var coord = [];
+// var ref =  firebase.database().ref('items'); 
+// var coord = [];
 
-ref.on('child_added', function(snap){
-    console.log(snap.val().Coordinate);
-    coord = snap.val().Coordinate;
-  });
+// ref.on('child_added', function(snap){
+//     console.log(snap.val().Coordinate);
+//     coord = snap.val().Coordinate;
+//   });
+
 
 class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      currentItem: '',
-      username: '',
+      CurrentIP: '',
+      ID: '',
+      Location: '',
+      Name: '',
+      Online: '',
+      Port: '',
+      device_id_1: '',
+      location_1: '',
+      time: '',
+      type: '',
       items: [],
       events: [],
       user: '',
-      lng: 3.4360,
-      lat: 55.3781,
-      zoom: 4,
-      coord: ''
+      lng: -0.1278,
+      lat: 51.5074,
+      zoom: 4
     }
     this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
     this.handleSubmitEvent = this.handleSubmitEvent.bind(this); // <-- add this line
     this.login = this.login.bind(this); // <-- add this line
     this.logout = this.logout.bind(this); // <-- add this line
-    //this.mapContainer = React.createRef();
+    this.mapContainer = React.createRef();
   }
   render(){
+
     return (
       <div className='app'>
         <header>
@@ -66,10 +74,12 @@ class App extends Component {
           <section className="add-item">
           <p>Add a NERU</p>
             <form onSubmit={this.handleSubmit}>
-              <input type="text" name="device_id" placeholder="Enter Device ID" onChange={this.handleChange} value={this.state.device_id} />
-              <input type="text" name="location" placeholder="Location" onChange={this.handleChange} value={this.state.location} />
-              <input type="text" name="name" placeholder="Name" onChange={this.handleChange} value={this.state.name} />
-              <input type="text" name="port" placeholder="Port" onChange={this.handleChange} value={this.state.port} />
+              <input type="text" name="CurrentIP" placeholder="IP Address" onChange={this.handleChange} value={this.state.CurrentIP} />
+              <input type="text" name="ID" placeholder="ID" onChange={this.handleChange} value={this.state.ID} />
+              <input type="text" name="Location" placeholder="Location" onChange={this.handleChange} value={this.state.Location} />
+              <input type="text" name="Name" placeholder="Name" onChange={this.handleChange} value={this.state.Name} />
+              <input type="text" name="Online" placeholder="Online" onChange={this.handleChange} value={this.state.Online} />
+              <input type="text" name="Port" placeholder="Port" onChange={this.handleChange} value={this.state.Port} />
               <button>Add Neru</button>
             </form>
             <p>Simulate Inertia Event</p>
@@ -87,11 +97,13 @@ class App extends Component {
           <ul>
             {this.state.items.map((item) => {
               return (
-                <li key={item.id}>
-                  <h3>{item.name}</h3>
-                  <p>Device ID: {item.device_id}</p>
-                  <p>Location: {item.location}</p>
-                  <p>Port: {item.port}
+                <li key={item.ID}>
+                  <h3>ID: {item.ID}</h3>
+                  <p>IP Address: {item.CurrentIP}</p>
+                  <p>Location: {item.Location}</p>
+                  <p>Name: {item.Name}</p>
+                   <p>Online: {item.Online}</p>
+                  <p>Port: {item.Port}
                   <button onClick={() => this.removeItem(item.id)}>Remove Item</button>
                   </p>
                 </li>
@@ -119,19 +131,7 @@ class App extends Component {
         </div>
         </section>
       </div>
-            <Map
-      style="mapbox://styles/mapbox/streets-v8"
-      containerStyle={{
-        height: '70vh',
-      width: '100vw'
-    }}>
-  <Layer 
-  type="symbol"
-   id="marker" 
-   layout={{'icon-image': 'marker-15' }}>
-  <Feature coordinates={[-0.481747846041145, 51.3233379650232], coord} />
-  </Layer>
-</Map>
+        <div ref={el => this.mapContainer = el} style={{width:'100%', height:'60vh'}}/>
          </div>
     );
   }
@@ -144,17 +144,21 @@ class App extends Component {
   e.preventDefault();
   const itemsRef = firebase.database().ref('items');
   const item = {
-    device_id: this.state.device_id,
-    location: this.state.location,
-    name: this.state.name,
-    port: this.state.port
+    CurrentIP: this.state.CurrentIP,
+    ID: this.state.ID,
+    Location: this.state.Location,
+    Name: this.state.Name,
+    Online: this.state.Online,
+    Port: this.state.Port
   }
   itemsRef.push(item);
   this.setState({
-    device_id: '',
-    location: '',
-    name: '',
-    port: ''
+    CurrentIP: '',
+    ID: '',
+    Location: '',
+    Name: '',
+    Online: '',
+    Port: ''
   });
   }
   handleSubmitEvent(e) {
@@ -186,11 +190,12 @@ class App extends Component {
     let newState = [];
     for (let item in items) {
       newState.push({
-        id: item,
-        name: items[item].name,
-        device_id: items[item].device_id,
-        location: items[item].location,
-        port: items[item].port,
+        ID: item,
+        CurrentIP: items[item].CurrentIP,
+        Location: items[item].Location,
+        Name: items[item].Name,
+        Online: items[item].Online,
+        Port: items[item].Port
       });
     }
     this.setState({
@@ -216,13 +221,23 @@ class App extends Component {
     });
   });
 
-//   const { lng, lat, zoom } = this.state;
-//   const map = new mapboxgl.Map({
-//     container: this.mapContainer.current,
-//     style: 'mapbox://styles/mapbox/streets-v11',
-//     center: [lng, lat],
-//     zoom: zoom
-//   });
+  const map = new mapboxgl.Map({
+      container: this.mapContainer,
+      style: 'mapbox://styles/mapbox/streets-v11', 
+      center: [this.state.lng, this.state.lat],
+      zoom: this.state.zoom
+    })
+    var ref = firebase.database().ref('test');
+    
+      ref.on('child_added', function(snap){        
+        // ref_new.push(snap.val());
+        var marker = new mapboxgl.Marker()
+              .setLngLat([snap.val().Longitude, snap.val().Latitude])
+              .setPopup(new mapboxgl.Popup({ offset: 30 })
+              .setHTML('<h4>' + snap.val().Name + '<h4>' + 'CurrentIP:' + snap.val().CurrentIP))
+              .addTo(map);
+    })
+
 }
 
 
@@ -253,6 +268,9 @@ login() {
       });
     });
 }
+
+
+
 
 
 }
