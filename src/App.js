@@ -76,7 +76,8 @@ class App extends Component {
             <form onSubmit={this.handleSubmit}>
               <input type="text" name="CurrentIP" placeholder="IP Address" onChange={this.handleChange} value={this.state.CurrentIP} />
               <input type="text" name="ID" placeholder="ID" onChange={this.handleChange} value={this.state.ID} />
-              <input type="text" name="Location" placeholder="Location" onChange={this.handleChange} value={this.state.Location} />
+              <input type="text" name="Latitude" placeholder="Lat" onChange={this.handleChange} value={this.state.Latitude} />
+              <input type="text" name="Longitude" placeholder="Longitude" onChange={this.handleChange} value={this.state.Longitude} />
               <input type="text" name="Name" placeholder="Name" onChange={this.handleChange} value={this.state.Name} />
               <input type="text" name="Online" placeholder="Online" onChange={this.handleChange} value={this.state.Online} />
               <input type="text" name="Port" placeholder="Port" onChange={this.handleChange} value={this.state.Port} />
@@ -98,13 +99,14 @@ class App extends Component {
             {this.state.items.map((item) => {
               return (
                 <li key={item.ID}>
-                  <h3>ID: {item.ID}</h3>
+                <h3>ID: {item.ID}</h3>
                   <p>IP Address: {item.CurrentIP}</p>
-                  <p>Location: {item.Location}</p>
+                  <p>Latitude: {item.Latitude}</p>
+                  <p>Longitude: {item.Longitude}</p>
                   <p>Name: {item.Name}</p>
-                   <p>Online: {item.Online}</p>
-                  <p>Port: {item.Port}
-                  <button onClick={() => this.removeItem(item.id)}>Remove Item</button>
+                     <p>Online: {item.Online}</p>
+                   <p>Port: {item.Port}
+                   <button onClick={() => this.removeItem(item.id)}>Remove NERU</button>
                   </p>
                 </li>
               )
@@ -146,7 +148,8 @@ class App extends Component {
   const item = {
     CurrentIP: this.state.CurrentIP,
     ID: this.state.ID,
-    Location: this.state.Location,
+    Latitude: this.state.Latitude,
+    Longitude: this.state.Longitude,
     Name: this.state.Name,
     Online: this.state.Online,
     Port: this.state.Port
@@ -155,7 +158,8 @@ class App extends Component {
   this.setState({
     CurrentIP: '',
     ID: '',
-    Location: '',
+    Latitude: '',
+    Longitude: '',
     Name: '',
     Online: '',
     Port: ''
@@ -192,7 +196,8 @@ class App extends Component {
       newState.push({
         ID: item,
         CurrentIP: items[item].CurrentIP,
-        Location: items[item].Location,
+        Latitude: items[item].Latitude,
+        Longitude: items[item].Longitude,
         Name: items[item].Name,
         Online: items[item].Online,
         Port: items[item].Port
@@ -227,7 +232,7 @@ class App extends Component {
       center: [this.state.lng, this.state.lat],
       zoom: this.state.zoom
     })
-    var ref = firebase.database().ref('test');
+    var ref = firebase.database().ref('items');
     
       ref.on('child_added', function(snap){        
         // ref_new.push(snap.val());
