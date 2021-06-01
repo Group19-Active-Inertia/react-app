@@ -23,12 +23,12 @@ class App extends Component {
     this.state = {
       CurrentIP: '',
       ID: '',
-      Location: '',
+      Latitude: '',
+      Longitude: '',
       Name: '',
       Online: '',
       Port: '',
       device_id_1: '',
-      location_1: '',
       time: '',
       type: '',
       items: [],
@@ -86,7 +86,8 @@ class App extends Component {
             <p>Simulate Inertia Event</p>
             <form onSubmit={this.handleSubmitEvent}>
               <input type="text" name="device_id_1" placeholder="Enter Device ID" onChange={this.handleChange} value={this.state.device_id_1} />
-              <input type="text" name="location_1" placeholder="Location" onChange={this.handleChange} value={this.state.location_1} />
+              <input type="text" name="Latitude" placeholder="Latitude" onChange={this.handleChange} value={this.state.Latitude} />
+              <input type="text" name="Longitude" placeholder="Longitude" onChange={this.handleChange} value={this.state.Longitude} />
               <input type="text" name="time" placeholder="Time" onChange={this.handleChange} value={this.state.time} />
               <input type="text" name="type" placeholder="Event Type" onChange={this.handleChange} value={this.state.type} />
               <button>Generate Event</button>
@@ -94,7 +95,7 @@ class App extends Component {
         </section>
         <section className='display-item'>
           <div className="wrapper">
-          <p>NERUs</p>
+          <h2>NERUs</h2>
           <ul>
             {this.state.items.map((item) => {
               return (
@@ -106,7 +107,7 @@ class App extends Component {
                   <p>Name: {item.Name}</p>
                      <p>Online: {item.Online}</p>
                    <p>Port: {item.Port}
-                   <button onClick={() => this.removeItem(item.id)}>Remove NERU</button>
+                   <button onClick={() => this.removeItem(item.ID)}>Remove NERU</button>
                   </p>
                 </li>
               )
@@ -114,14 +115,15 @@ class App extends Component {
           </ul>
         </div>
         <div className="wrapper">
-        <p>Inertia Events</p>
+        <h2>Inertia Events</h2>
           <ul>
             {this.state.events.map((event) => {
               return (
                 <li key={event.id}>
                   <h3>Inertia Event: {event.location_1}</h3>
                   <p>Device ID: {event.device_id_1}</p>
-                  <p>Location: {event.location_1}</p>
+                  <p>Latitude: {event.Latitude}</p>
+                  <p>Longitude: {event.Longitude}</p>
                   <p>Time: {event.time}</p>
                    <p>Type: {event.type}
                    <button onClick={() => this.removeEvent(event.id)}>Archive</button>
@@ -170,14 +172,16 @@ class App extends Component {
   const eventsRef = firebase.database().ref('events');
   const event = {
     device_id_1: this.state.device_id_1,
-    location_1: this.state.location_1,
+    Latitude: this.state.Latitude,
+    Longitude: this.state.Longitude,
     time: this.state.time,
     type: this.state.type
   }
   eventsRef.push(event);
   this.setState({
     device_id_1: '',
-    location_1: '',
+    Latitude: '',
+    Longitude: '',
     time: '',
     type: ''
   });
@@ -216,7 +220,8 @@ class App extends Component {
       newState.push({
         id: event,
         device_id_1: events[event].device_id_1,
-        location_1: events[event].location_1,
+        Latitude: events[event].Latitude,
+        Longitude: events[event].Longitude,
         time: events[event].time,
         type: events[event].type
       });
@@ -235,11 +240,20 @@ class App extends Component {
     var ref = firebase.database().ref('items');
     
       ref.on('child_added', function(snap){        
-        // ref_new.push(snap.val());
         var marker = new mapboxgl.Marker()
               .setLngLat([snap.val().Longitude, snap.val().Latitude])
               .setPopup(new mapboxgl.Popup({ offset: 30 })
-              .setHTML('<h4>' + snap.val().Name + '<h4>' + 'CurrentIP:' + snap.val().CurrentIP))
+              .setHTML('<h4>' + snap.val().Name + '<h4>' + 'CurrentIP:' + snap.val().CurrentIP + '<h4>' + 'Online:' + snap.val().Online))
+              .addTo(map);
+    })
+
+    var ref_2 = firebase.database().ref('events');
+    
+      ref_2.on('child_added', function(snap){        
+        var marker2 = new mapboxgl.Marker({color: 'black'})
+              .setLngLat([snap.val().Longitude, snap.val().Latitude])
+              .setPopup(new mapboxgl.Popup({ offset: 30 })
+              .setHTML('<h4>' + snap.val().device_id_1 + '<h4>' + 'Time:' + snap.val().time + '<h4>' + 'Type:' + snap.val().type))
               .addTo(map);
     })
 
@@ -249,11 +263,13 @@ class App extends Component {
 removeItem(itemId) {
   const itemRef = firebase.database().ref(`/items/${itemId}`);
   itemRef.remove();
+  window.location.reload(false);
 } 
 
 removeEvent(eventId) {
   const eventsRef = firebase.database().ref(`/events/${eventId}`);
   eventsRef.remove();
+  window.location.reload(false);
 } 
 
 login() {

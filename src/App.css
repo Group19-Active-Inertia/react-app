@@ -13,6 +13,7 @@ header p {
   width: 400px;
   margin: 0 auto;
 }
+
 header .wrapper {
   display: flex;
   justify-content: space-between;
@@ -159,9 +160,7 @@ button {
   height: 400px;
 }
 
- .mapboxgl-popup {
-overflow-y: scroll;
-overflow-x: scroll;
+.mapboxgl-popup {
 max-width: 200px;
 max-height: 400px;
 font: 12px/20px 'Open Sans', sans-serif;
