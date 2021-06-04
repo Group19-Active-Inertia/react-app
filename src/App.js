@@ -5,6 +5,8 @@ import mapboxgl from '!mapbox-gl'; // eslint-disable-line import/no-webpack-load
 import ReactMapboxGl, { Layer, Feature, Marker } from 'react-mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import ReachDOM from 'react-dom';
+import { Doughnut, Line } from 'react-chartjs-2';
+
 
 mapboxgl.accessToken='pk.eyJ1IjoicGczNzE4IiwiYSI6ImNrcDRkOTlweTAwMTYyb2xmOWdtYWQ5MHMifQ.qqgml2fS9n6aeHF3AOV64Q';
 
@@ -46,7 +48,6 @@ class App extends Component {
     this.mapContainer = React.createRef();
   }
   render(){
-
     return (
       <div className='app'>
         <header>
@@ -94,9 +95,9 @@ class App extends Component {
             </form>
         </section>
         <section className='display-item'>
-          <div className="wrapper">
-          <h2>NERUs</h2>
-          <ul>
+        <h2>NERUs</h2>
+          <div className="itemScroll">
+          <ul className="horizScroll">
             {this.state.items.map((item) => {
               return (
                 <li key={item.ID}>
@@ -114,9 +115,9 @@ class App extends Component {
             })}
           </ul>
         </div>
-        <div className="wrapper">
         <h2>Inertia Events</h2>
-          <ul>
+        <div className="itemScroll">
+          <ul className="horizScroll">
             {this.state.events.map((event) => {
               return (
                 <li key={event.id}>
@@ -134,11 +135,11 @@ class App extends Component {
           </ul>
         </div>
         </section>
+        
       </div>
         <div ref={el => this.mapContainer = el} style={{width:'100%', height:'60vh'}}/>
          </div>
-    );
-  }
+    )}
   handleChange(e) {
     this.setState({
       [e.target.name]: e.target.value
@@ -212,7 +213,7 @@ class App extends Component {
     });
   });
 
-    const eventsRef = firebase.database().ref('events');
+  const eventsRef = firebase.database().ref('events');
   eventsRef.on('value', (snapshot) => {
     let events = snapshot.val();
     let newState = [];
@@ -256,7 +257,6 @@ class App extends Component {
               .setHTML('<h4>' + snap.val().device_id_1 + '<h4>' + 'Time:' + snap.val().time + '<h4>' + 'Type:' + snap.val().type))
               .addTo(map);
     })
-
 }
 
 
