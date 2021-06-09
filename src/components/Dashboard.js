@@ -7,7 +7,6 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import ReachDOM from 'react-dom';
 import { Doughnut, Line } from 'react-chartjs-2';
 
-
 mapboxgl.accessToken='pk.eyJ1IjoicGczNzE4IiwiYSI6ImNrcDRkOTlweTAwMTYyb2xmOWdtYWQ5MHMifQ.qqgml2fS9n6aeHF3AOV64Q';
 
 // var ref =  firebase.database().ref('items'); 
@@ -17,13 +16,9 @@ mapboxgl.accessToken='pk.eyJ1IjoicGczNzE4IiwiYSI6ImNrcDRkOTlweTAwMTYyb2xmOWdtYWQ
 //     console.log(snap.val().Coordinate);
 //     coord = snap.val().Coordinate;
 //   });
-
-
-class Dashboard extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      CurrentIP: '',
+const Dashboard = (props) => {
+  const mapContainer = React.useRef();
+  const [state, setState] = useState({CurrentIP: '',
       ID: '',
       Latitude: '',
       Longitude: '',
@@ -33,48 +28,178 @@ class Dashboard extends Component {
       device_id_1: '',
       time: '',
       type: '',
-      items: [],
+      nerus: [],
       events: [],
       lng: -0.1278,
       lat: 51.5074,
-      zoom: 4
-    }
-    this.handleChange = this.handleChange.bind(this);
-    this.handleSubmit = this.handleSubmit.bind(this);
-    this.handleSubmitEvent = this.handleSubmitEvent.bind(this); // <-- add this line
-    this.mapContainer = React.createRef();
+      zoom: 4});
+
+  const handleChange = (e) => {
+    setState((currState) => ({
+      ...currState,
+      [e.target.name]: e.target.value
+    }));
   }
-  render(){
-    return (
-      <div className='app'>
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const itemsRef = firebase.database().ref('nerus');
+    const item = {
+      CurrentIP: state.CurrentIP,
+      ID: state.ID,
+      Latitude: state.Latitude,
+      Longitude: state.Longitude,
+      Name: state.Name,
+      Online: state.Online,
+      Port: state.Port
+    }
+    itemsRef.push(item);
+    setState((currState) => ({
+      ...currState,
+      CurrentIP: '',
+      ID: '',
+      Latitude: '',
+      Longitude: '',
+      Name: '',
+      Online: '',
+      Port: ''
+    }));
+  };
+
+  const handleSubmitEvent = (e) => {
+    e.preventDefault();
+    const eventsRef = firebase.database().ref('events');
+    const event = {
+      device_id_1: state.device_id_1,
+      Latitude: state.Latitude,
+      Longitude: state.Longitude,
+      time: state.time,
+      type: state.type
+    }
+    eventsRef.push(event);
+    setState((currState) => ({
+      ...currState,
+      device_id_1: '',
+      Latitude: '',
+      Longitude: '',
+      time: '',
+      type: ''
+    }));
+  };
+
+  console.log({mapContainer});
+  useEffect(() => {
+    console.log('Component mounted');
+    const itemsRef = firebase.database().ref('nerus');
+    itemsRef.on('value', (snapshot) => {
+      let nerus = snapshot.val();
+      let newState = [];
+      for (let item in nerus) {
+        newState.push({
+          ID: item,
+          CurrentIP: nerus[item].CurrentIP,
+          Latitude: nerus[item].Latitude,
+          Longitude: nerus[item].Longitude,
+          Name: nerus[item].Name,
+          Online: nerus[item].Online,
+          Port: nerus[item].Port
+        });
+      }
+      setState((currState) => ({
+        ...currState,
+        nerus: newState
+      }));
+    });
+  
+    const eventsRef = firebase.database().ref('events');
+    eventsRef.on('value', (snapshot) => {
+      let events = snapshot.val();
+      let newState = [];
+      for (let event in events) {
+        newState.push({
+          id: event,
+          device_id_1: events[event].device_id_1,
+          Latitude: events[event].Latitude,
+          Longitude: events[event].Longitude,
+          time: events[event].time,
+          type: events[event].type
+        });
+      }
+      setState((currState) => ({
+        ...currState,
+        events: newState
+      }));
+    });
+  
+    const map = new mapboxgl.Map({
+        container: mapContainer.current,
+        style: 'mapbox://styles/mapbox/streets-v11', 
+        center: [state.lng, state.lat],
+        zoom: state.zoom
+      })
+      var ref = firebase.database().ref('nerus');
+      
+        ref.on('child_added', function(snap){        
+          var marker = new mapboxgl.Marker()
+                .setLngLat([snap.val().Longitude, snap.val().Latitude])
+                .setPopup(new mapboxgl.Popup({ offset: 30 })
+                .setHTML('<h4>' + snap.val().Name + '<h4>' + 'CurrentIP:' + snap.val().CurrentIP + '<h4>' + 'Online:' + snap.val().Online))
+                .addTo(map);
+      })
+  
+      var ref_2 = firebase.database().ref('events');
+      
+        ref_2.on('child_added', function(snap){        
+          var marker2 = new mapboxgl.Marker({color: 'black'})
+                .setLngLat([snap.val().Longitude, snap.val().Latitude])
+                .setPopup(new mapboxgl.Popup({ offset: 30 })
+                .setHTML('<h4>' + snap.val().device_id_1 + '<h4>' + 'Time:' + snap.val().time + '<h4>' + 'Type:' + snap.val().type))
+                .addTo(map);
+      })
+  }, []);
+
+
+
+  const removeItem = (itemId) => {
+    const itemRef = firebase.database().ref(`/nerus/${itemId}`);
+    itemRef.remove();
+  } 
+
+  const removeEvent = (eventId) => {
+    const eventsRef = firebase.database().ref(`/events/${eventId}`);
+    eventsRef.remove();
+  } 
+
+  return (
+      <>
+        <div className='app'>
         <header>
             <div className='wrapper'>
               <h1>Create Active Inertia</h1>
                 </div>
                 <div>
-              <button>Log Out </button>
+              <button onClick={props.onLogout}>Log Out </button>
                 </div>
                 </header>
         <div className='container'>
           <section className="add-item">
           <p>Add a NERU</p>
-            <form onSubmit={this.handleSubmit}>
-              <input type="text" name="CurrentIP" placeholder="IP Address" onChange={this.handleChange} value={this.state.CurrentIP} />
-              <input type="text" name="ID" placeholder="ID" onChange={this.handleChange} value={this.state.ID} />
-              <input type="text" name="Latitude" placeholder="Lat" onChange={this.handleChange} value={this.state.Latitude} />
-              <input type="text" name="Longitude" placeholder="Longitude" onChange={this.handleChange} value={this.state.Longitude} />
-              <input type="text" name="Name" placeholder="Name" onChange={this.handleChange} value={this.state.Name} />
-              <input type="text" name="Online" placeholder="Online" onChange={this.handleChange} value={this.state.Online} />
-              <input type="text" name="Port" placeholder="Port" onChange={this.handleChange} value={this.state.Port} />
+            <form onSubmit={handleSubmit}>
+              <input type="text" name="CurrentIP" placeholder="IP Address" onChange={handleChange} value={state.CurrentIP} />
+              <input type="text" name="ID" placeholder="ID" onChange={handleChange} value={state.ID} />
+              <input type="text" name="Latitude" placeholder="Lat" onChange={handleChange} value={state.Latitude} />
+              <input type="text" name="Longitude" placeholder="Longitude" onChange={handleChange} value={state.Longitude} />
+              <input type="text" name="Name" placeholder="Name" onChange={handleChange} value={state.Name} />
+              <input type="text" name="Online" placeholder="Online" onChange={handleChange} value={state.Online} />
+              <input type="text" name="Port" placeholder="Port" onChange={handleChange} value={state.Port} />
               <button>Add Neru</button>
             </form>
             <p>Simulate Inertia Event</p>
-            <form onSubmit={this.handleSubmitEvent}>
-              <input type="text" name="device_id_1" placeholder="Enter Device ID" onChange={this.handleChange} value={this.state.device_id_1} />
-              <input type="text" name="Latitude" placeholder="Latitude" onChange={this.handleChange} value={this.state.Latitude} />
-              <input type="text" name="Longitude" placeholder="Longitude" onChange={this.handleChange} value={this.state.Longitude} />
-              <input type="text" name="time" placeholder="Time" onChange={this.handleChange} value={this.state.time} />
-              <input type="text" name="type" placeholder="Event Type" onChange={this.handleChange} value={this.state.type} />
+            <form onSubmit={handleSubmitEvent}>
+              <input type="text" name="device_id_1" placeholder="Enter Device ID" onChange={handleChange} value={state.device_id_1} />
+              <input type="text" name="Latitude" placeholder="Latitude" onChange={handleChange} value={state.Latitude} />
+              <input type="text" name="Longitude" placeholder="Longitude" onChange={handleChange} value={state.Longitude} />
+              <input type="text" name="time" placeholder="Time" onChange={handleChange} value={state.time} />
+              <input type="text" name="type" placeholder="Event Type" onChange={handleChange} value={state.type} />
               <button>Generate Event</button>
             </form>
         </section>
@@ -82,7 +207,7 @@ class Dashboard extends Component {
         <h2>NERUs</h2>
           <div className="itemScroll">
           <ul className="horizScroll">
-            {this.state.items.map((item) => {
+            {state.nerus.map((item) => {
               return (
                 <li key={item.ID}>
                 <h3>ID: {item.ID}</h3>
@@ -92,7 +217,7 @@ class Dashboard extends Component {
                   <p>Name: {item.Name}</p>
                      <p>Online: {item.Online}</p>
                    <p>Port: {item.Port}
-                   <button onClick={() => this.removeItem(item.ID)}>Remove NERU</button>
+                   <button onClick={() => removeItem(item.ID)}>Remove NERU</button>
                   </p>
                 </li>
               )
@@ -102,7 +227,7 @@ class Dashboard extends Component {
         <h2>Inertia Events</h2>
         <div className="itemScroll">
           <ul className="horizScroll">
-            {this.state.events.map((event) => {
+            {state.events.map((event) => {
               return (
                 <li key={event.id}>
                   <h3>Inertia Event: {event.location_1}</h3>
@@ -111,7 +236,7 @@ class Dashboard extends Component {
                   <p>Longitude: {event.Longitude}</p>
                   <p>Time: {event.time}</p>
                    <p>Type: {event.type}
-                   <button onClick={() => this.removeEvent(event.id)}>Archive</button>
+                   <button onClick={() => removeEvent(event.id)}>Archive</button>
                   </p>
                 </li>
               )
@@ -121,137 +246,10 @@ class Dashboard extends Component {
         </section>
         
       </div>
-        <div ref={el => this.mapContainer = el} style={{width:'100%', height:'60vh'}}/>
+        <div ref={mapContainer} style={{width:'100%', height:'60vh'}}/>
          </div>
-    )}
-  handleChange(e) {
-    this.setState({
-      [e.target.name]: e.target.value
-     });
-  }
-  handleSubmit(e) {
-  e.preventDefault();
-  const itemsRef = firebase.database().ref('items');
-  const item = {
-    CurrentIP: this.state.CurrentIP,
-    ID: this.state.ID,
-    Latitude: this.state.Latitude,
-    Longitude: this.state.Longitude,
-    Name: this.state.Name,
-    Online: this.state.Online,
-    Port: this.state.Port
-  }
-  itemsRef.push(item);
-  this.setState({
-    CurrentIP: '',
-    ID: '',
-    Latitude: '',
-    Longitude: '',
-    Name: '',
-    Online: '',
-    Port: ''
-  });
-  }
-  handleSubmitEvent(e) {
-  e.preventDefault();
-  const eventsRef = firebase.database().ref('events');
-  const event = {
-    device_id_1: this.state.device_id_1,
-    Latitude: this.state.Latitude,
-    Longitude: this.state.Longitude,
-    time: this.state.time,
-    type: this.state.type
-  }
-  eventsRef.push(event);
-  this.setState({
-    device_id_1: '',
-    Latitude: '',
-    Longitude: '',
-    time: '',
-    type: ''
-  });
-  }
-  componentDidMount() {
-  const itemsRef = firebase.database().ref('items');
-  itemsRef.on('value', (snapshot) => {
-    let items = snapshot.val();
-    let newState = [];
-    for (let item in items) {
-      newState.push({
-        ID: item,
-        CurrentIP: items[item].CurrentIP,
-        Latitude: items[item].Latitude,
-        Longitude: items[item].Longitude,
-        Name: items[item].Name,
-        Online: items[item].Online,
-        Port: items[item].Port
-      });
-    }
-    this.setState({
-      items: newState
-    });
-  });
+      </>  
+    );
+};
 
-  const eventsRef = firebase.database().ref('events');
-  eventsRef.on('value', (snapshot) => {
-    let events = snapshot.val();
-    let newState = [];
-    for (let event in events) {
-      newState.push({
-        id: event,
-        device_id_1: events[event].device_id_1,
-        Latitude: events[event].Latitude,
-        Longitude: events[event].Longitude,
-        time: events[event].time,
-        type: events[event].type
-      });
-    }
-    this.setState({
-      events: newState
-    });
-  });
-
-  const map = new mapboxgl.Map({
-      container: this.mapContainer,
-      style: 'mapbox://styles/mapbox/streets-v11', 
-      center: [this.state.lng, this.state.lat],
-      zoom: this.state.zoom
-    })
-    var ref = firebase.database().ref('items');
-    
-      ref.on('child_added', function(snap){        
-        var marker = new mapboxgl.Marker()
-              .setLngLat([snap.val().Longitude, snap.val().Latitude])
-              .setPopup(new mapboxgl.Popup({ offset: 30 })
-              .setHTML('<h4>' + snap.val().Name + '<h4>' + 'CurrentIP:' + snap.val().CurrentIP + '<h4>' + 'Online:' + snap.val().Online))
-              .addTo(map);
-    })
-
-    var ref_2 = firebase.database().ref('events');
-    
-      ref_2.on('child_added', function(snap){        
-        var marker2 = new mapboxgl.Marker({color: 'black'})
-              .setLngLat([snap.val().Longitude, snap.val().Latitude])
-              .setPopup(new mapboxgl.Popup({ offset: 30 })
-              .setHTML('<h4>' + snap.val().device_id_1 + '<h4>' + 'Time:' + snap.val().time + '<h4>' + 'Type:' + snap.val().type))
-              .addTo(map);
-    })
-}
-
-
-removeItem(itemId) {
-  const itemRef = firebase.database().ref(`/items/${itemId}`);
-  itemRef.remove();
-} 
-
-removeEvent(eventId) {
-  const eventsRef = firebase.database().ref(`/events/${eventId}`);
-  eventsRef.remove();
-} 
-
-
-
-
-
-}
 export default Dashboard;
