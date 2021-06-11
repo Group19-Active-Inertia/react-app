@@ -1,13 +1,16 @@
-import React, { Component, useRef, useEffect, useState } from 'react';
+import React, { useContext, useRef, useEffect, useState, useMemo } from 'react';
 import './Dashboard.css';
+import { AppContext } from '../appContextProvider';
 import firebase, { auth, provider } from '../firebase.js';
 import mapboxgl from '!mapbox-gl'; // eslint-disable-line import/no-webpack-loader-syntax
-import ReactMapboxGl, { Layer, Feature, Marker } from 'react-mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
+import AddUser from './AddUser';
+import UsersList from './UsersList';
+import { enableRemoveOption, getDuration } from '../utils';
 import ReachDOM from 'react-dom';
-import { Doughnut, Line } from 'react-chartjs-2';
+import { Line } from 'react-chartjs-2';
 
-mapboxgl.accessToken='pk.eyJ1IjoicGczNzE4IiwiYSI6ImNrcDRkOTlweTAwMTYyb2xmOWdtYWQ5MHMifQ.qqgml2fS9n6aeHF3AOV64Q';
+mapboxgl.accessToken = 'pk.eyJ1IjoicGczNzE4IiwiYSI6ImNrcDRkOTlweTAwMTYyb2xmOWdtYWQ5MHMifQ.qqgml2fS9n6aeHF3AOV64Q';
 
 // var ref =  firebase.database().ref('items'); 
 // var coord = [];
@@ -16,23 +19,30 @@ mapboxgl.accessToken='pk.eyJ1IjoicGczNzE4IiwiYSI6ImNrcDRkOTlweTAwMTYyb2xmOWdtYWQ
 //     console.log(snap.val().Coordinate);
 //     coord = snap.val().Coordinate;
 //   });
+
+
 const Dashboard = (props) => {
   const mapContainer = React.useRef();
-  const [state, setState] = useState({CurrentIP: '',
-      ID: '',
-      Latitude: '',
-      Longitude: '',
-      Name: '',
-      Online: '',
-      Port: '',
-      device_id_1: '',
-      time: '',
-      type: '',
-      nerus: [],
-      events: [],
-      lng: -0.1278,
-      lat: 51.5074,
-      zoom: 4});
+  const { clearUser, user } = useContext(AppContext);
+  const [reloadUsers, setReloadUsers] = useState(false);
+  const [state, setState] = useState({
+    CurrentIP: '',
+    ID: '',
+    Latitude: '',
+    Longitude: '',
+    Name: '',
+    Online: '',
+    Port: '',
+    device_id_1: '',
+    time: '',
+    type: '',
+    nerus: [],
+    events: [],
+    arrivals: [],
+    lng: -0.1278,
+    lat: 51.5074,
+    zoom: 4,
+  });
 
   const handleChange = (e) => {
     setState((currState) => ({
@@ -85,8 +95,25 @@ const Dashboard = (props) => {
       type: ''
     }));
   };
+  // var ref_3 = firebase.database().ref('arrivals');
+  // ref_3.on('child_added', function(snap) {
+  //     const line_data = {
+  //       labels: [snap.val().time],
+  //       datasets: [
+  //       {
+  //         label: 'Duration',
+  //         fill: false,
+  //         lineTension: 0.5,
+  //         backgroundColor: 'rgba(75,192,192,1)',
+  //         borderColor: 'rgba(0,0,0,1)',
+  //         borderWidth: 2,
+  //         data: [snap.val().duration]
+  //       }
+  //       ]
+  //     }
+  // })
 
-  console.log({mapContainer});
+  console.log({ mapContainer });
   useEffect(() => {
     console.log('Component mounted');
     const itemsRef = firebase.database().ref('nerus');
@@ -109,7 +136,7 @@ const Dashboard = (props) => {
         nerus: newState
       }));
     });
-  
+
     const eventsRef = firebase.database().ref('events');
     eventsRef.on('value', (snapshot) => {
       let events = snapshot.val();
@@ -129,32 +156,53 @@ const Dashboard = (props) => {
         events: newState
       }));
     });
-  
+
+    const arrivalsRef = firebase.database().ref('arrivals');
+    arrivalsRef.on('value', (snapshot) => {
+      let arrivals = snapshot.val();
+      let newState = [];
+      for (let arrival in arrivals) {
+        newState.push({
+          id: arrival,
+          time: arrivals[arrival].time,
+          duration: arrivals[arrival].duration
+        });
+      }
+      setState((currState) => ({
+        ...currState,
+        arrivals: newState
+      }));
+    });
+
+
+
+
     const map = new mapboxgl.Map({
-        container: mapContainer.current,
-        style: 'mapbox://styles/mapbox/streets-v11', 
-        center: [state.lng, state.lat],
-        zoom: state.zoom
-      })
-      var ref = firebase.database().ref('nerus');
-      
-        ref.on('child_added', function(snap){        
-          var marker = new mapboxgl.Marker()
-                .setLngLat([snap.val().Longitude, snap.val().Latitude])
-                .setPopup(new mapboxgl.Popup({ offset: 30 })
-                .setHTML('<h4>' + snap.val().Name + '<h4>' + 'CurrentIP:' + snap.val().CurrentIP + '<h4>' + 'Online:' + snap.val().Online))
-                .addTo(map);
-      })
-  
-      var ref_2 = firebase.database().ref('events');
-      
-        ref_2.on('child_added', function(snap){        
-          var marker2 = new mapboxgl.Marker({color: 'black'})
-                .setLngLat([snap.val().Longitude, snap.val().Latitude])
-                .setPopup(new mapboxgl.Popup({ offset: 30 })
-                .setHTML('<h4>' + snap.val().device_id_1 + '<h4>' + 'Time:' + snap.val().time + '<h4>' + 'Type:' + snap.val().type))
-                .addTo(map);
-      })
+      container: mapContainer.current,
+      style: 'mapbox://styles/mapbox/streets-v11',
+      center: [state.lng, state.lat],
+      zoom: state.zoom
+    })
+    var ref = firebase.database().ref('nerus');
+
+    ref.on('child_added', function (snap) {
+      var marker = new mapboxgl.Marker()
+        .setLngLat([snap.val().Longitude, snap.val().Latitude])
+        .setPopup(new mapboxgl.Popup({ offset: 30 })
+          .setHTML('<h4>' + snap.val().Name + '<h4>' + 'CurrentIP:' + snap.val().CurrentIP + '<h4>' + 'Online:' + snap.val().Online))
+        .addTo(map);
+    })
+
+    var ref_2 = firebase.database().ref('events');
+
+    ref_2.on('child_added', function (snap) {
+      var marker2 = new mapboxgl.Marker({ color: 'black' })
+        .setLngLat([snap.val().Longitude, snap.val().Latitude])
+        .setPopup(new mapboxgl.Popup({ offset: 30 })
+          .setHTML('<h4>' + snap.val().device_id_1 + '<h4>' + 'Time:' + snap.val().time + '<h4>' + 'Type:' + snap.val().type))
+        .addTo(map);
+    })
+
   }, []);
 
 
@@ -162,94 +210,186 @@ const Dashboard = (props) => {
   const removeItem = (itemId) => {
     const itemRef = firebase.database().ref(`/nerus/${itemId}`);
     itemRef.remove();
-  } 
+  }
 
   const removeEvent = (eventId) => {
     const eventsRef = firebase.database().ref(`/events/${eventId}`);
     eventsRef.remove();
-  } 
+  }
+
+  const timeToDurationLineData = useMemo(() => {
+    const labels = state.arrivals.map(arrival => arrival.time);
+    const data = state.arrivals.map(getDuration);
+
+    return {
+      labels,
+      datasets: [
+        {
+          label: 'Sending Time',
+          fill: false,
+          lineTension: 0.5,
+          backgroundColor: 'rgba(75,192,192,1)',
+          borderColor: 'rgba(0,0,0,1)',
+          borderWidth: 2,
+          data
+        }
+      ]
+    }
+  },
+    [state.arrivals]);
 
   return (
-      <>
-        <div className='app'>
+    <>
+      <div className='app'>
         <header>
-            <div className='wrapper'>
-              <h1>Create Active Inertia</h1>
-                </div>
-                <div>
-              <button onClick={props.onLogout}>Log Out </button>
-                </div>
-                </header>
+          <div className='wrapper'>
+            <h1>Create Active Inertia</h1>
+            <h2>{user.userType}</h2>
+          </div>
+          <div>
+            <button onClick={() => clearUser()}>Log Out </button>
+          </div>
+        </header>
         <div className='container'>
-          <section className="add-item">
-          <p>Add a NERU</p>
-            <form onSubmit={handleSubmit}>
-              <input type="text" name="CurrentIP" placeholder="IP Address" onChange={handleChange} value={state.CurrentIP} />
-              <input type="text" name="ID" placeholder="ID" onChange={handleChange} value={state.ID} />
-              <input type="text" name="Latitude" placeholder="Lat" onChange={handleChange} value={state.Latitude} />
-              <input type="text" name="Longitude" placeholder="Longitude" onChange={handleChange} value={state.Longitude} />
-              <input type="text" name="Name" placeholder="Name" onChange={handleChange} value={state.Name} />
-              <input type="text" name="Online" placeholder="Online" onChange={handleChange} value={state.Online} />
-              <input type="text" name="Port" placeholder="Port" onChange={handleChange} value={state.Port} />
-              <button>Add Neru</button>
-            </form>
-            <p>Simulate Inertia Event</p>
-            <form onSubmit={handleSubmitEvent}>
-              <input type="text" name="device_id_1" placeholder="Enter Device ID" onChange={handleChange} value={state.device_id_1} />
-              <input type="text" name="Latitude" placeholder="Latitude" onChange={handleChange} value={state.Latitude} />
-              <input type="text" name="Longitude" placeholder="Longitude" onChange={handleChange} value={state.Longitude} />
-              <input type="text" name="time" placeholder="Time" onChange={handleChange} value={state.time} />
-              <input type="text" name="type" placeholder="Event Type" onChange={handleChange} value={state.type} />
-              <button>Generate Event</button>
-            </form>
+          {
+            user.userType !== 'default' &&
+            <section className="add-item">
+              <AddUser onSuccess={() => setReloadUsers(true)} nerus={state.nerus} />
+              <p>Add a NERU</p>
+              <form onSubmit={handleSubmit}>
+                <input type="text" name="CurrentIP" placeholder="IP Address" onChange={handleChange} value={state.CurrentIP} />
+                <input type="text" name="ID" placeholder="ID" onChange={handleChange} value={state.ID} />
+                <input type="text" name="Latitude" placeholder="Lat" onChange={handleChange} value={state.Latitude} />
+                <input type="text" name="Longitude" placeholder="Longitude" onChange={handleChange} value={state.Longitude} />
+                <input type="text" name="Name" placeholder="Name" onChange={handleChange} value={state.Name} />
+                <input type="text" name="Online" placeholder="Online" onChange={handleChange} value={state.Online} />
+                <input type="text" name="Port" placeholder="Port" onChange={handleChange} value={state.Port} />
+                <button>Add Neru</button>
+              </form>
+              <p>Simulate Inertia Event</p>
+              <form onSubmit={handleSubmitEvent}>
+                <input type="text" name="device_id_1" placeholder="Enter Device ID" onChange={handleChange} value={state.device_id_1} />
+                <input type="text" name="Latitude" placeholder="Latitude" onChange={handleChange} value={state.Latitude} />
+                <input type="text" name="Longitude" placeholder="Longitude" onChange={handleChange} value={state.Longitude} />
+                <input type="text" name="time" placeholder="Time" onChange={handleChange} value={state.time} />
+                <input type="text" name="type" placeholder="Event Type" onChange={handleChange} value={state.type} />
+                <button>Generate Event</button>
+              </form>
+
+            </section>
+          }
+          <section className='display-item'>
+            <h2>NERUs</h2>
+            <div className="itemScroll">
+              <ul className="horizScroll">
+                {state.nerus.map((item) => {
+                  return (
+                    <li key={item.ID}>
+                      <h3>{item.ID}</h3>
+                      <p>IP Address: {item.CurrentIP}</p>
+                      <p>Latitude: {item.Latitude}</p>
+                      <p>Longitude: {item.Longitude}</p>
+                      <p>Name: {item.Name}</p>
+                      <p>Online: {item.Online}</p>
+                      <p>Port: {item.Port}
+                        {
+                          enableRemoveOption(user, [item.Name]) &&
+                          <button onClick={() => removeItem(item.ID)}>Remove NERU</button>
+                        }
+                      </p>
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
+            <h2>Inertia Events</h2>
+            <div className="itemScroll">
+              <ul className="horizScroll">
+                {state.events.map((event) => {
+                  return (
+                    <li key={event.id}>
+                      <h3>{event.device_id_1}</h3>
+                      <p>Device ID: {event.device_id_1}</p>
+                      <p>Latitude: {event.Latitude}</p>
+                      <p>Longitude: {event.Longitude}</p>
+                      <p>Time: {event.time}</p>
+                      <p>Type: {event.type}
+                        {
+                          user.userType === 'admin' &&
+                          <button onClick={() => removeEvent(event.id)}>Archive</button>
+                        }
+                      </p>
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
+            
+            <UsersList reload={reloadUsers} onSuccessfulReload={() => setReloadUsers(false)} />
+           
+            
+
+            
+              <Line
+                data={timeToDurationLineData}
+                options={{
+                  title: {
+                    display: true,
+                    text: 'Event Time v. Sending Time',
+                    fontSize: 20
+                  },
+                  legend: {
+                    display: true,
+                    position: 'right'
+                  }
+                }}
+              />
+            
+
+                {/* )
+                })} */}
+
         </section>
-        <section className='display-item'>
-        <h2>NERUs</h2>
-          <div className="itemScroll">
-          <ul className="horizScroll">
-            {state.nerus.map((item) => {
-              return (
-                <li key={item.ID}>
-                <h3>ID: {item.ID}</h3>
-                  <p>IP Address: {item.CurrentIP}</p>
-                  <p>Latitude: {item.Latitude}</p>
-                  <p>Longitude: {item.Longitude}</p>
-                  <p>Name: {item.Name}</p>
-                     <p>Online: {item.Online}</p>
-                   <p>Port: {item.Port}
-                   <button onClick={() => removeItem(item.ID)}>Remove NERU</button>
-                  </p>
-                </li>
-              )
-            })}
-          </ul>
+
+          {/* {state.arrivals.map((arrival) => {
+          return(
+            <div>
+            <Line
+              data = {
+              labels: [arrival.time],
+              datasets: [
+              {
+              label: 'Duration',
+              fill: false,
+              lineTension: 0.5,
+              backgroundColor: 'rgba(75,192,192,1)',
+              borderColor: 'rgba(0,0,0,1)',
+              borderWidth: 2,
+              data: [arrival.duration]
+              }
+              ]
+              }
+          options={{
+            title:{
+              display:true,
+              text:'Event Time v. Sending Time',
+              fontSize:20
+            },
+            legend:{
+              display:true,
+              position:'right'
+            }
+          }}
+          )
+        })}
+        /> */}
+
         </div>
-        <h2>Inertia Events</h2>
-        <div className="itemScroll">
-          <ul className="horizScroll">
-            {state.events.map((event) => {
-              return (
-                <li key={event.id}>
-                  <h3>Inertia Event: {event.location_1}</h3>
-                  <p>Device ID: {event.device_id_1}</p>
-                  <p>Latitude: {event.Latitude}</p>
-                  <p>Longitude: {event.Longitude}</p>
-                  <p>Time: {event.time}</p>
-                   <p>Type: {event.type}
-                   <button onClick={() => removeEvent(event.id)}>Archive</button>
-                  </p>
-                </li>
-              )
-            })}
-          </ul>
-        </div>
-        </section>
-        
+        <div ref={mapContainer} style={{ width: '100%', height: '60vh' }} />
+
       </div>
-        <div ref={mapContainer} style={{width:'100%', height:'60vh'}}/>
-         </div>
-      </>  
-    );
+    </>
+  );
 };
 
 export default Dashboard;

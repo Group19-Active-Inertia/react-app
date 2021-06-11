@@ -1,49 +1,43 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
+import { AppContext } from '../appContextProvider';
+import {loginApi} from '../api';
 import PropTypes from 'prop-types';
 import './Login.css';
 
 //check user type
 //if admin -> allow removal, adding of NERUs
 
-async function loginUser(credentials) {
- const response = await fetch('http://neru-api.herokuapp.com/weblogin', {
-   method: 'POST',
-   headers: {
-     'Content-Type': 'application/json'
-   },
-   body: JSON.stringify(credentials)
- });
- console.log({response});
- return response;
-}
 
-export default function Login({ setToken}) {
+const mapToUserDetails = (response) => {
+  return {
+    token: response.idToken,
+    userType: response[response.uid].userType,
+    sites: response[response.uid].sites,
+  }
+}
+export default function Login(props) {
   const [email, setUserName] = useState();
   const [password, setPassword] = useState();
   const [error, setError] = useState();
+  const {saveUser} = useContext(AppContext);
 
-  const handleSubmit = async e => {
-    e.preventDefault();
-    try{
-      const token = await loginUser({
-        email,
-        password
-      });
-      console.log(token);
-      if(token.ok){
-        setToken(token);
-      }
-      else{
+  const login = async (e) => {
+      e.preventDefault();
+      try {
+        const {data} = await loginApi(email, password);
+        saveUser(mapToUserDetails(data));
+        props.history.push('/dashboard');
+      } catch(error) {
+        console.log(error);
+        setError(true);
         setError('Incorrect Login');
       }
-    } catch(err){
-      console.log(err);
-    }
+      
   }
   return(
     <div className="login-wrapper">
       <h1>Please Log In</h1>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={login}>
         <label>
           <p>Username</p>
           <input type="text" onChange={e => setUserName(e.target.value)} />
@@ -53,7 +47,7 @@ export default function Login({ setToken}) {
           <input type="password" onChange={e => setPassword(e.target.value)} />
         </label>
         <div>
-          <button type="submit">Submit</button>
+          <button type="submit">Log In</button>
         </div>
         <div>
         <p>
@@ -66,5 +60,5 @@ export default function Login({ setToken}) {
 }
 
 Login.propTypes = {
-  setToken: PropTypes.func.isRequired
+  history: PropTypes.object.isRequired
 };
