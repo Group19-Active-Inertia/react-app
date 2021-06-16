@@ -1,6 +1,6 @@
 import React, { useState, useContext } from 'react';
 import { AppContext } from '../appContextProvider';
-import {loginApi} from '../api';
+import {loginApi, authEvents, authNerus} from '../api';
 import PropTypes from 'prop-types';
 import './Login.css';
 
@@ -11,8 +11,8 @@ import './Login.css';
 const mapToUserDetails = (response) => {
   return {
     token: response.idToken,
-    userType: response[response.uid].userType,
-    sites: response[response.uid].sites,
+    userType: response.userType,
+    sites: response.sites,
   }
 }
 export default function Login(props) {
@@ -25,6 +25,9 @@ export default function Login(props) {
       e.preventDefault();
       try {
         const {data} = await loginApi(email, password);
+        await authEvents(data.idToken);
+        await authNerus(data.idToken);
+        
         saveUser(mapToUserDetails(data));
         props.history.push('/dashboard');
       } catch(error) {
